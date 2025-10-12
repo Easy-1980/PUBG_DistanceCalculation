@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.35312.102
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PUBG_DistanceCalculation", "PUBG_DistanceCalculation.csproj", "{136588D8-B57B-4FD9-B967-62B338D305FF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OverlayWindow", "..\OverlayWindow\OverlayWindow.csproj", "{0FF48C5E-3386-4A28-AE74-E6A792FECFDB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{136588D8-B57B-4FD9-B967-62B338D305FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{136588D8-B57B-4FD9-B967-62B338D305FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{136588D8-B57B-4FD9-B967-62B338D305FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{136588D8-B57B-4FD9-B967-62B338D305FF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0FF48C5E-3386-4A28-AE74-E6A792FECFDB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0FF48C5E-3386-4A28-AE74-E6A792FECFDB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0FF48C5E-3386-4A28-AE74-E6A792FECFDB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0FF48C5E-3386-4A28-AE74-E6A792FECFDB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {43D0745B-2B2E-476E-ABAC-3F6D8E1D994F}
+	EndGlobalSection
+EndGlobal
