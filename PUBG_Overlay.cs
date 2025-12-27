@@ -28,9 +28,10 @@ namespace PUBG_CalculateDistance
         // 键位定义
         private const int VK_LBUTTON = 0x01;
         private const int VK_RBUTTON = 0x02;
-        private const int VK_CONTROL = 0x11; // Ctrl 键
-        private const int VK_S = 0x53;       // S 键
-        private const int VK_Q = 0xC0;       // Q改为反引号` 键 (新增：用于退出)
+        private const int VK_SHIFT = 0x10; // 【新增】Shift 键
+        private const int VK_CONTROL = 0x11;
+        private const int VK_S = 0x53;
+        private const int VK_OEM_3 = 0xC0;   // 反引号 `
 
         // ================= 变量 =================
         private Vector2? p1 = null;
@@ -40,7 +41,6 @@ namespace PUBG_CalculateDistance
         private bool wasMouseDown = false;
         private bool isFirstFrame = true;
 
-        // 记录启动时间，用于显示几秒钟的欢迎提示
         private DateTime startupTime = DateTime.Now;
 
         private float VisualScale = 1.3f;
@@ -74,7 +74,6 @@ namespace PUBG_CalculateDistance
 
         protected override void Render()
         {
-            // 1. 窗口初始化
             if (isFirstFrame)
             {
                 int realW = GetSystemMetrics(SM_CXSCREEN);
@@ -88,29 +87,24 @@ namespace PUBG_CalculateDistance
             Vector2 mousePos = new Vector2(winPoint.X, winPoint.Y);
             var drawList = ImGui.GetBackgroundDrawList();
 
-            // 2. 按键状态检测
+            // 按键状态检测
             bool isCtrlDown = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0;
+            bool isShiftDown = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0; // 检测 Shift
             bool isLeftDown = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;
             bool isRightDown = (GetAsyncKeyState(VK_RBUTTON) & 0x8000) != 0;
             bool isSDown = (GetAsyncKeyState(VK_S) & 0x8000) != 0;
-            bool isQDown = (GetAsyncKeyState(VK_Q) & 0x8000) != 0; // 检测 `
+            bool isBacktickDown = (GetAsyncKeyState(VK_OEM_3) & 0x8000) != 0;
 
-            // ===================================================
-            // 新功能 1: 退出逻辑 (Ctrl + `)
-            // ===================================================
-            if (isCtrlDown && isQDown)
+            // 退出逻辑 (Ctrl + `)
+            if (isCtrlDown && isBacktickDown)
             {
-                // 强制终止程序
                 Environment.Exit(0);
             }
 
-            // ===================================================
-            // 新功能 2: 启动提示 (只显示前 2 秒)
-            // ===================================================
+            // 启动提示
             if ((DateTime.Now - startupTime).TotalSeconds < 2)
             {
-                string welcome = "PUBG DistanceCalculation Running!";
-                drawList.AddText(ImGui.GetFont(), 30.0f * VisualScale, new Vector2(50, 50), 0xFF00FF00, welcome);
+                drawList.AddText(ImGui.GetFont(), 30.0f * VisualScale, new Vector2(50, 50), 0xFF00FF00, "PUBG Overlay Running!");
                 drawList.AddText(ImGui.GetFont(), 20.0f * VisualScale, new Vector2(50, 90), 0xFFFFFFFF, "Hold [Ctrl] to use");
             }
 
@@ -124,33 +118,41 @@ namespace PUBG_CalculateDistance
 
                 if (CurrentPixelsPer100m > 0 && p1 == null)
                 {
+                    // 测距模式
                     if (p3 == null) tip = $"[Click 1] Start\n{status}";
                     else if (p4 == null) tip = "[Click 2] End";
                 }
                 else
                 {
+                    // 校准模式
                     if (p1 == null) tip = "[Calibrate] Grid Start";
                     else if (p2 == null) tip = "[Calibrate] Grid End";
                 }
 
-                // 增加退出提示，防止用户忘记
-                if (p1 != null && p2 != null && CurrentPixelsPer100m > 0)
-                    tip += "\n[Ctrl + S] Save | [Ctrl + `] Quit";
+                // 底部提示栏更新
+                // 告诉用户：右键清除线条，Shift+右键重置配置
+                if (CurrentPixelsPer100m > 0)
+                    tip += "\n[R-Click] Clear Line | [Shift+R-Click] Reset Config";
                 else
-                    tip += "\n[Ctrl + `] Quit";
+                    tip += "\n[R-Click] Clear Points";
+
+                tip += "\n[Ctrl+S] Save | [Ctrl+`] Quit";
 
                 drawList.AddText(ImGui.GetFont(), 18.0f * VisualScale, mousePos + new Vector2(20, 20), 0xFF00FFFF, tip);
 
+                // 保存
                 if (isSDown && CurrentPixelsPer100m > 0)
                 {
                     SaveConfig();
                     drawList.AddText(mousePos + new Vector2(20, 80), 0xFF00FF00, "CONFIG SAVED!");
                 }
 
+                // 左键点击逻辑
                 if (isLeftDown && !wasMouseDown)
                 {
                     if (CurrentPixelsPer100m <= 0 || p1 != null)
                     {
+                        // 校准逻辑
                         if (p1 == null) p1 = mousePos;
                         else if (p2 == null)
                         {
@@ -164,23 +166,45 @@ namespace PUBG_CalculateDistance
                     }
                     else
                     {
+                        // 测距逻辑
                         if (p3 == null) p3 = mousePos;
                         else if (p4 == null) p4 = mousePos;
                         else { p3 = mousePos; p4 = null; }
                     }
                 }
 
+                // ===============================================
+                // 【修复核心】右键逻辑
+                // ===============================================
                 if (isRightDown)
                 {
-                    if (p3 != null) { p3 = null; p4 = null; }
-                    else if (p1 != null) { p1 = null; p2 = null; CurrentPixelsPer100m = 0; }
-                    else { CurrentPixelsPer100m = 0; }
+                    // 1. 如果正在测距 (有红线)，优先清除红线
+                    if (p3 != null || p4 != null)
+                    {
+                        p3 = null;
+                        p4 = null;
+                    }
+                    // 2. 如果正在校准 (有黄线)，清除黄线
+                    else if (p1 != null || p2 != null)
+                    {
+                        p1 = null;
+                        p2 = null;
+                        // 注意：这里不再清除 CurrentPixelsPer100m，只清除点
+                    }
+                    // 3. 只有按住 Shift 并且右键，才强制重置配置 (归零)
+                    else if (isShiftDown)
+                    {
+                        CurrentPixelsPer100m = 0;
+                        p1 = null; p2 = null;
+                        p3 = null; p4 = null;
+                    }
+                    // 4. 普通右键如果没东西可清，什么都不做 (保护配置不丢失)
                 }
             }
 
             wasMouseDown = isLeftDown;
 
-            // 绘图
+            // 绘图部分
             float dotSize = 4.0f * VisualScale;
             float lineThick = 2.0f * VisualScale;
 
